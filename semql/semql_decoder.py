@@ -929,45 +929,188 @@ class SemQL_Decoder(nn.Module):
         else:
             return (h_t, cell_t), att_t
 
-    def get_accuracy(self, pred_semql, gold_semql):
-        assert len(pred_semql) == len(gold_semql), "pred_len:{} gold_len:{}".format(
-            len(pred_semql), len(gold_semql)
+    def get_accuracy(self, batch_pred_semql, batch_gold_semql):
+        assert len(batch_pred_semql) == len(
+            batch_gold_semql
+        ), "pred_len:{} gold_len:{}".format(
+            len(batch_pred_semql), len(batch_gold_semql)
         )
 
         acc_list = []
-        acc = {"total": 0.0, "sketch": 0.0, "detail": 0.0}
-        for idx in range(len(gold_semql)):
-            pred_sketch = []
-            pred_detail = []
-            for item in pred_semql[idx]:
-                if item.is_sketch:
-                    pred_sketch += [str(item)]
-                else:
-                    pred_detail += [str(item)]
-
-            gold_sketch = []
-            gold_detail = []
-            for item in gold_semql[idx]:
-                if item.is_sketch:
-                    gold_sketch += [str(item)]
-                else:
-                    gold_detail += [str(item)]
-
-            # Sketch acc
-            sketch_is_correct = pred_sketch == gold_sketch
-            acc["sketch"] += sketch_is_correct
-
-            # Detail acc
-            detail_is_correct = pred_detail == gold_detail
-            acc["detail"] += detail_is_correct
-
+        acc = {
+            "total": 0.0,
+            "sketch": 0.0,
+            "detail": 0.0,
+            "head_agg": 0.0,
+            "head_col": 0.0,
+            "head_num": 0.0,
+            "is_order_by": 0.0,
+            "local_predicate_agg": 0.0,
+            "local_predicate_col": 0.0,
+            "local_predicate_num": 0.0,
+            "local_predicate_op": 0.0,
+            "quantifier_tab": 0.0,
+        }
+        for idx in range(len(batch_gold_semql)):
+            pred_semql = batch_pred_semql[idx]
+            gold_semql = batch_gold_semql[idx]
+            acc["sketch"] += self._get_accuracy_sketch(pred_semql, gold_semql)
+            acc["detail"] += self._get_accuracy_detail(pred_semql, gold_semql)
+            (
+                head_num_cor,
+                head_agg_cor,
+                head_col_cor,
+            ) = self._get_accuracy_head_num_agg_and_col(pred_semql, gold_semql)
+            acc["head_num"] += head_num_cor
+            acc["head_agg"] += head_agg_cor
+            acc["head_col"] += head_col_cor
+            acc["is_order_by"] += self._get_accuracy_is_orderby(pred_semql, gold_semql)
+            local_agg, local_col = self._get_accuracy_predicate_agg_col(
+                pred_semql, gold_semql
+            )
+            acc["local_predicate_agg"] += local_agg
+            acc["local_predicate_col"] += local_col
+            local_num, local_op = self._get_accuracy_predicate_num_operator(
+                pred_semql, gold_semql
+            )
+            acc["local_predicate_num"] += local_num
+            acc["local_predicate_op"] += local_op
+            acc["quantifier_tab"] += self._get_accuracy_tab(pred_semql, gold_semql)
             # Total acc
-            is_correct = sketch_is_correct and detail_is_correct
+            is_correct = self._get_accuracy_total(pred_semql, gold_semql)
             acc["total"] += is_correct
             acc_list += [is_correct]
 
         # To percentage
         for key in acc.keys():
-            acc[key] /= len(gold_semql)
+            acc[key] /= len(batch_gold_semql)
 
         return acc, acc_list
+
+    def _get_accuracy_total(self, pred_semql, gold_semql):
+        pred = [str(item) for item in pred_semql]
+        gold = [str(item) for item in gold_semql]
+        return int(pred == gold)
+
+    def _get_accuracy_sketch(self, pred_semql, gold_semql):
+        pred_sketch = [str(item) for item in pred_semql if item.is_sketch]
+        gold_sketch = [str(item) for item in gold_semql if item.is_sketch]
+        return int(pred_sketch == gold_sketch)
+
+    def _get_accuracy_detail(self, pred_semql, gold_semql):
+        pred_detail = [str(item) for item in pred_semql if not item.is_sketch]
+        gold_detail = [str(item) for item in gold_semql if not item.is_sketch]
+        return int(pred_detail == gold_detail)
+
+    def _get_accuracy_head_num_agg_and_col(self, pred_semql, gold_semql):
+        # TODO have to be fixed for nested query!
+        pred_num = []
+        pred_agg = []
+        pred_col = []
+        for idx, item in enumerate(pred_semql):
+            if isinstance(item, define_rule.N):
+                pred_num.append(item.id_c)
+                for subidx in range(item.id_c + 1):
+                    pred_agg.append(pred_semql[idx + 3 * subidx + 1].id_c)
+                    assert isinstance(pred_semql[idx + 3 * subidx + 1], define_rule.A)
+                    pred_col.append(
+                        pred_semql[idx + 3 * subidx + 2].id_c
+                        + 1000 * pred_semql[idx + 3 * subidx + 3].id_c
+                    )
+                    assert isinstance(pred_semql[idx + 3 * subidx + 2], define_rule.C)
+        gold_num = []
+        gold_agg = []
+        gold_col = []
+        for idx, item in enumerate(gold_semql):
+            if isinstance(item, define_rule.N):
+                gold_num.append(item.id_c)
+                for subidx in range(item.id_c + 1):
+                    gold_agg.append(gold_semql[idx + 3 * subidx + 1].id_c)
+                    assert isinstance(gold_semql[idx + 3 * subidx + 1], define_rule.A)
+                    gold_col.append(
+                        gold_semql[idx + 3 * subidx + 2].id_c
+                        + 1000 * gold_semql[idx + 3 * subidx + 3].id_c
+                    )
+                    assert isinstance(gold_semql[idx + 3 * subidx + 2], define_rule.C)
+
+        return (
+            int(len(pred_num) == len(gold_num) and set(pred_num) == set(gold_num)),
+            int(len(pred_agg) == len(gold_agg) and set(pred_agg) == set(gold_agg)),
+            int(len(pred_col) == len(gold_col) and set(pred_col) == set(gold_col)),
+        )
+
+    def _get_accuracy_is_orderby(self, pred_semql, gold_semql):
+        pred_isorderby = []
+        for item in pred_semql:
+            if isinstance(item, define_rule.Root):
+                if item.id_c in {1, 4}:
+                    pred_isorderby.append(True)
+                else:
+                    pred_isorderby.append(False)
+        gold_isorderby = []
+        for item in gold_semql:
+            if isinstance(item, define_rule.Root):
+                if item.id_c in {1, 4}:
+                    gold_isorderby.append(True)
+                else:
+                    gold_isorderby.append(False)
+        return int(pred_isorderby == gold_isorderby)
+
+    def _get_accuracy_predicate_num_operator(self, pred_semql, gold_semql):
+        pred_operator = [
+            item.id_c for item in pred_semql if isinstance(item, define_rule.Filter)
+        ]
+        gold_operator = [
+            item.id_c for item in gold_semql if isinstance(item, define_rule.Filter)
+        ]
+        return (
+            int(len(pred_operator) == len(gold_operator)),
+            int(pred_operator == gold_operator),
+        )
+
+    def _get_accuracy_predicate_agg_col(self, pred_semql, gold_semql):
+        pred_predagg = []
+        pred_predcol = []
+        for idx, item in enumerate(pred_semql):
+            if isinstance(item, define_rule.Filter) and item.id_c in range(2, 20):
+                assert isinstance(pred_semql[idx + 1], define_rule.A)
+                pred_predagg.append(pred_semql[idx + 1].id_c)
+                pred_predcol.append(
+                    pred_semql[idx + 2].id_c + 1000 * pred_semql[idx + 3].id_c
+                )
+        gold_predagg = []
+        gold_predcol = []
+        for idx, item in enumerate(gold_semql):
+            if isinstance(item, define_rule.Filter) and item.id_c in range(2, 20):
+                assert isinstance(gold_semql[idx + 1], define_rule.A)
+                gold_predagg.append(
+                    gold_semql[idx + 1].id_c + 1000 * gold_semql[idx + 3].id_c
+                )
+        return int(pred_predagg == gold_predagg), int(pred_predcol == gold_predcol)
+
+    def _get_accuracy_tab(self, pred_semql, gold_semql):
+        pred_tab = []
+        root_tabs = None
+        for item in pred_semql:
+            if isinstance(item, define_rule.Root):
+                if root_tabs is not None:
+                    pred_tab.append(root_tabs)
+                root_tabs = []
+            elif isinstance(item, define_rule.T):
+                root_tabs.append(item.id_c)
+
+        gold_tab = []
+        root_tabs = None
+        for item in gold_semql:
+            if isinstance(item, define_rule.Root):
+                if root_tabs is not None:
+                    gold_tab.append(root_tabs)
+                root_tabs = []
+            elif isinstance(item, define_rule.T):
+                root_tabs.append(item.id_c)
+        if len(pred_tab) != len(gold_tab):
+            return 0
+        for ptab, gtab in zip(pred_tab, gold_tab):
+            if set(ptab) != set(gtab):
+                return 0
+        return 1
