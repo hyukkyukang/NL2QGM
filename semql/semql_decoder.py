@@ -1083,8 +1083,9 @@ class SemQL_Decoder(nn.Module):
         for idx, item in enumerate(gold_semql):
             if isinstance(item, define_rule.Filter) and item.id_c in range(2, 20):
                 assert isinstance(gold_semql[idx + 1], define_rule.A)
-                gold_predagg.append(
-                    gold_semql[idx + 1].id_c + 1000 * gold_semql[idx + 3].id_c
+                gold_predagg.append(gold_semql[idx + 1].id_c)
+                gold_predcol.append(
+                    gold_semql[idx + 2].id_c + 1000 * gold_semql[idx + 3].id_c
                 )
         return int(pred_predagg == gold_predagg), int(pred_predcol == gold_predcol)
 
@@ -1093,21 +1094,25 @@ class SemQL_Decoder(nn.Module):
         root_tabs = None
         for item in pred_semql:
             if isinstance(item, define_rule.Root):
-                if root_tabs is not None:
+                if root_tabs:
                     pred_tab.append(root_tabs)
                 root_tabs = []
             elif isinstance(item, define_rule.T):
                 root_tabs.append(item.id_c)
+        if root_tabs:
+            pred_tab.append(root_tabs)
 
         gold_tab = []
         root_tabs = None
         for item in gold_semql:
             if isinstance(item, define_rule.Root):
-                if root_tabs is not None:
+                if root_tabs:
                     gold_tab.append(root_tabs)
                 root_tabs = []
             elif isinstance(item, define_rule.T):
                 root_tabs.append(item.id_c)
+        if root_tabs:
+            gold_tab.append(root_tabs)
         if len(pred_tab) != len(gold_tab):
             return 0
         for ptab, gtab in zip(pred_tab, gold_tab):
