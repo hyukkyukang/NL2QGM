@@ -1,3 +1,6 @@
+# NL2QGM
+Natural Language to Query Graph Model (QGM)
+
 ## Environment Setup
 
 * `Ubuntu 16.04`
