@@ -53,7 +53,7 @@ class Graph:
         node_pairs = self.get_node_pairs(n1, n2, both_ends)
         for edge in self.edges:
             if [edge.start, edge.end] in node_pairs:
-                return ValueError("Edge {} {} already exists".format(n1, n2))
+                raise ValueError("Edge {} {} already exists".format(n1, n2))
 
         self.edges.append(Edge(start=n1, end=n2, cost=cost))
         if both_ends:
@@ -69,7 +69,7 @@ class Graph:
 
     def dijkstra(self, source, dest):
         assert source in self.vertices, "Such source node doesn't exist"
-        assert dest in self.vertices, "Such source node doesn't exis"
+        assert dest in self.vertices, "Such source node doesn't exist"
 
         # 1. Mark all nodes unvisited and store them.
         # 2. Set the distance to zero for our initial node

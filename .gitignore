@@ -1,7 +1,13 @@
 .idea/
 __pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
 analysis/
-log.txt/
+log.txt
 data/
 renv/
 venv/
@@ -11,3 +17,5 @@ saved_model/
 *d.txt
 web/build/
 web/node_modules/
+.DS_Store
+*.swp

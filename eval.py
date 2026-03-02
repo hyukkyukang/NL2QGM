@@ -49,7 +49,7 @@ if __name__ == "__main__":
         torch.cuda.set_device(args.cuda)
         model.cuda()
 
-    # Load trained wieghts
+    # Load trained weights
     print("load pretrained model from {}".format(args.load_model))
     pretrained_model = torch.load(
         args.load_model, map_location=lambda storage, loc: storage

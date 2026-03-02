@@ -41,7 +41,7 @@ def length_array_to_mask_tensor(length_array, cuda=False, value=None):
     for i, seq_len in enumerate(length_array):
         mask[i][:seq_len] = 0
 
-    if value != None:
+    if value is not None:
         for b_id in range(len(value)):
             for c_id, c in enumerate(value[b_id]):
                 if value[b_id][c_id] == [3]:
