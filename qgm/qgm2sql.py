@@ -9,7 +9,7 @@ def decode_qgm_box(iidx, info, boxes, schema, alias_cnt):
     # get quantifiers with type s and has no predicate
     # get all the join predicates between quantifiers with type f
     # assumption is that if there is a quantifier with type s for the from clause, there are no other quantifiers in the box for the from clause.
-    # set dictioanry for alias
+    # set dictionary for alias
 
     select_box = group_box = order_box = None
     for box in boxes:

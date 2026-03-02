@@ -26,7 +26,7 @@ def load_dataSets(args):
 
     output_tab = {}
     tables = {}
-    tabel_name = set()
+    table_name = set()
     for i in range(len(table_datas)):
         table = table_datas[i]
         temp = {}
@@ -39,7 +39,7 @@ def load_dataSets(args):
         table["col_set"] = tmp_col
         table["col"] = [x[1] for x in table["column_names"]]
         db_name = table["db_id"]
-        tabel_name.add(db_name)
+        table_name.add(db_name)
         table["schema_content"] = [col[1] for col in table["column_names"]]
         table["col_table"] = [col[0] for col in table["column_names"]]
         output_tab[db_name] = temp

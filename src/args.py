@@ -23,7 +23,7 @@ def init_arg_parser():
         "--milestones", default=[30, 50], type=list, help="milestones for lr scheduler"
     )
     arg_parser.add_argument(
-        "--lr_scheduler_gammar",
+        "--lr_scheduler_gamma",
         default=1e-1,
         type=float,
         help="decay rate of learning rate scheduler",

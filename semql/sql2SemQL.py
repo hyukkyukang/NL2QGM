@@ -38,12 +38,12 @@ class Parser:
         """
         use_sup, use_ord, use_fil = True, True, False
 
-        if sql["sql"]["limit"] == None:
+        if sql["sql"]["limit"] is None:
             use_sup = False
 
         if sql["sql"]["orderBy"] == []:
             use_ord = False
-        elif sql["sql"]["limit"] != None:
+        elif sql["sql"]["limit"] is not None:
             use_ord = False
 
         # check the where and having
@@ -135,7 +135,7 @@ class Parser:
         """
         result = []
         select = sql["sql"]["select"][1]
-        if sql["sql"]["limit"] == None:
+        if sql["sql"]["limit"] is None:
             return result, None
         if sql["sql"]["orderBy"][0] == "desc":
             result.append(Sup(0))

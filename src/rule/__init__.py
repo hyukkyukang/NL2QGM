@@ -2,6 +2,6 @@
 """
 # @Time    : 2019/5/27
 # @Author  : Jiaqi&Zecheng
-# @File    : __init__.py.py
+# @File    : __init__.py
 # @Software: PyCharm
 """

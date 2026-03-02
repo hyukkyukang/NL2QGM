@@ -11,7 +11,7 @@ Install Python dependency: `pip install -r requirements.txt`
 #### Data preparation
 
 * Download [Glove Embedding](https://nlp.stanford.edu/data/wordvecs/glove.42B.300d.zip) and put `glove.42B.300d` under `./data/` directory  
-* Follow instructions under `./qgm/` directiory
+* Follow instructions under `./qgm/` directory
 
 #### Training
 
